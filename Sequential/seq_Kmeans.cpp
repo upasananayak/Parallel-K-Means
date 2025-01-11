@@ -3,8 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include<algorithm>
-#include<chrono>
+#include <algorithm>
+#include <chrono>
+#include <cstdlib> // For rand() and srand()
 using namespace std;
 
 struct Point {
@@ -15,52 +16,36 @@ struct Point {
     Point() : x(0.0), y(0.0), cluster(-1), minDist(__DBL_MAX__) {}
     Point(double x, double y) : x(x), y(y), cluster(-1), minDist(__DBL_MAX__) {}
 
-    //Computes the (square) euclidean distance between this point and another
-
+    // Computes the (square) Euclidean distance between this point and another
     double distance(Point p) {
         return (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
     }
 };
 
-vector<Point> readcsv(const string &filename) {
+// Generates a dataset of random points based on user input
+vector<Point> generateRandomData(int numPoints) {
     vector<Point> points;
-    string line;
-    ifstream file(filename);
-
-    // Skip the header row
-    getline(file, line);
-
-    while (getline(file, line)) {
-        stringstream lineStream(line);
-        string bit;
-        double income, score;
-
-        // Skip CustomerID and Genre, only get Annual Income and Spending Score
-        getline(lineStream, bit, ',');  // Skip CustomerID
-        getline(lineStream, bit, ',');  // Skip Genre
-        getline(lineStream, bit, ',');  // Skip Age
-        getline(lineStream, bit, ',');  // Get Annual Income
-        income = stof(bit);
-        getline(lineStream, bit, '\n'); // Get Spending Score
-        score = stof(bit);
-
-        points.push_back(Point(income, score));
+    srand(static_cast<unsigned>(time(0)));
+    
+    for (int i = 0; i < numPoints; ++i) {
+        double x = static_cast<double>(rand()) / RAND_MAX * 100.0;
+        double y = static_cast<double>(rand()) / RAND_MAX * 100.0;
+        points.push_back(Point(x, y));
     }
     return points;
-    
 }
 
 /*
 points - pointer to vector of points
-epochs - number of k means iterations
+epochs - number of k-means iterations
 k - the number of initial centroids
 */
 void kMeansClustering(vector<Point>* points, int epochs, int k) {
     int n = points->size();
 
-    // Randomly initialise centroids
+    // Randomly initialize centroids
     vector<Point> centroids;
-    srand(time(0));
+    srand(static_cast<unsigned>(time(0)));
     for (int i = 0; i < k; ++i) {
         centroids.push_back(points->at(rand() % n));
     }
@@ -99,32 +84,52 @@ void kMeansClustering(vector<Point>* points, int epochs, int k) {
         }
     }
 
-    // Write to csv
-    ofstream myfile("output1.csv");
-    myfile << "x,y,c" << endl;
+    // Write data points to a file
+    ofstream pointsFile("output_data_points.txt");
+    pointsFile << "x,y,cluster" << endl;
     for (const auto &p : *points) {
-        myfile << p.x << "," << p.y << "," << p.cluster << endl;
+        pointsFile << p.x << "," << p.y << "," << p.cluster << endl;
     }
-    myfile.close();
+    pointsFile.close();
+
+    // Write centroids to a separate file
+    ofstream centroidsFile("centroids.txt");
+    centroidsFile << "x,y,cluster" << endl;
+    for (int j = 0; j < k; ++j) {
+        centroidsFile << centroids[j].x << "," << centroids[j].y << "," << j << endl;
+    }
+    centroidsFile.close();
 
     for (int j = 0; j < k; ++j) {
-        cout << "Cluster " << j << ": " <<endl;
-        cout << "Number of points: " << count_if(points->begin(), points->end(), [j](Point p) { return p.cluster == j; })<<"\t";
-        cout << "Centroid: (" << centroids[j].x << ", " << centroids[j].y << ")" << endl<<endl;
+        cout << "Cluster " << j << ":" << endl;
+        cout << "Number of points: " 
+             << count_if(points->begin(), points->end(), [j](Point p) { return p.cluster == j; }) << "\t";
+        cout << "Centroid: (" << centroids[j].x << ", " << centroids[j].y << ")" << endl << endl;
     }
 }
 
-    
 int main() {
-    vector<Point> points = readcsv("Mall_Customers.csv");
+    int numPoints, k;
+
+    cout << "Enter the number of data points: ";
+    cin >> numPoints;
+    cout << "Enter the number of clusters: ";
+    cin >> k;
+
+    // Generate random data points
+    vector<Point> points = generateRandomData(numPoints);
 
     auto start = chrono::high_resolution_clock::now(); // Start time
 
-    // Run k-means with 200 iterations and for 5 clusters
-    kMeansClustering(&points, 200, 5);
+    // Run k-means with 200 iterations
+    kMeansClustering(&points, 200, k);
 
     auto end = chrono::high_resolution_clock::now(); // End time
     chrono::duration<double> duration = end - start;
     cout << "Total execution time: " << duration.count() << " seconds" << endl;
 
+    cout << "Data points and cluster assignments have been saved to output_data_points.txt" << endl;
+    cout << "Centroids have been saved to centroids.txt" << endl;
+
+    return 0;
 }

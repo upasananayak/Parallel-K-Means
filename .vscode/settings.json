@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "iostream": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "omp.h": "c",
+        "string.h": "c"
     }
 }

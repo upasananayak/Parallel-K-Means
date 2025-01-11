@@ -1,0 +1,6 @@
+mpicc -o kmeansTest kmeansTest.c kmeans.c -lm
+
+mpiexec -n 4 ./kmeansTest 10000 2 10
+(dataset size, num_attributes, num_clusters)
+
+for graph, python plot.py
